@@ -43,7 +43,7 @@ best option to install the required packages to run <b>model2roms</b>. The minim
 conda create -n model2roms`
 conda config --add channels conda-forge
 conda activate model2roms
-conda install esmf xarray netcdf4 progressbar2 
+conda install esmf xarray netcdf4 progressbar2 meson zarr xesmf google-api-python-client google-cloud-storage gcsfs
 ```
 
 ![Sea-ice concentration Antarctica](https://github.com/trondkr/model2roms/blob/master/Examples/Figures/temp_Antarctic.png)
