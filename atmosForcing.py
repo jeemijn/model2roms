@@ -61,13 +61,13 @@ def createAtmosFileUV(confM2R):
     
     if confM2R.show_progress is True:
         import progressbar
-        progress = progressbar.ProgressBar(widgets=[progressbar.Percentage(), progressbar.Bar()], maxval=len(years)).start()
+        progress = progressbar.ProgressBar(widgets=[progressbar.Percentage(), progressbar.Bar()], maxval=len(confM2R.years)).start()
     
     # Create the objects for source and destination grids
+    # getERA5Filename  # unfinished (pseudo)code
    
-    getERA5_1DAYfilename
-
-    grdMODEL = grd.grdClass(nor, mytype, mytype, useESMF,'atmos')
+    grdMODEL = grd.Grd(nor, mytype, mytype, useESMF,'atmos')  # Is 'grd.Grd' correct? used to be 'grd.grdClass'
+    # unfinished code; 'nor' & 'mytype' not defined
     
     # Create the outputfile
     outfilename=  abbreviation + '_windUV_' + str(mytype) + '_' + str(startdate.year) + '_to_' + str(enddate.year) + '.nc'
