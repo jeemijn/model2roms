@@ -34,7 +34,8 @@ class Grd:
         The object is initialised and created through the __init__ method
         As an example of how to use, these lines return a grid object called grdTEST:
         => import grd
-        => grdTEST = grd.grdClass("grdfilename","ROMS")
+        => grdTEST = grd.Grd("FORCINGDATA", confM2R)
+        The variable grdtype can be "FORCINGDATA", "STATION" or "ROMS"
         """
         self.type = grdtype
         self.grdName = confM2R.outgrid_name

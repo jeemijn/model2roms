@@ -64,14 +64,12 @@ def createAtmosFileUV(confM2R):
         progress = progressbar.ProgressBar(widgets=[progressbar.Percentage(), progressbar.Bar()], maxval=len(confM2R.years)).start()
     
     # Create the objects for source and destination grids
-    # getERA5Filename  # unfinished (pseudo)code
-   
-    grdMODEL = grd.Grd(nor, mytype, mytype, useESMF,'atmos')  # Is 'grd.Grd' correct? used to be 'grd.grdClass'
-    # unfinished code; 'nor' & 'mytype' not defined
+    grdMODEL = grd.Grd("FORCINGDATA", confM2R)
     
     # Create the outputfile
-    outfilename=  abbreviation + '_windUV_' + str(mytype) + '_' + str(startdate.year) + '_to_' + str(enddate.year) + '.nc'
-    IOatmos.createNetCDFFileUV(grdROMS, outfilename, myformat, mytype)
+    outfilename= confM2R.abbreviation + '_windUV_' + str(confM2R.atmos_indata_type) + '_' \
+                 + str(confM2R.startdate.year) + '_to_' + str(confM2R.enddate.year) + '.nc'
+    IOatmos.createNetCDFFileUV(confM2R.grdROMS, outfilename, confM2R.output_format, confM2R.atmos_indata_type)
     
     # Setup ESMF for interpolation (calculates weights)
     print("  -> regridSrc2Dst at RHO points")
