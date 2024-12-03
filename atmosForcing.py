@@ -61,15 +61,27 @@ def createAtmosFileUV(confM2R):
     
     if confM2R.show_progress is True:
         import progressbar
-        progress = progressbar.ProgressBar(widgets=[progressbar.Percentage(), progressbar.Bar()], maxval=len(confM2R.years)).start()
+        progress = progressbar.ProgressBar(widgets=[progressbar.Percentage(), progressbar.Bar()], 
+                                           maxval=len(confM2R.years)).start()
+
+    # Prepare the objects for source and destination grids
+    # ASSUMPTION: identical input grids for ocean and atmos variables
+    if not confM2R.create_ocean_forcing:     # else already done in convert_MODEL2ROMS()
+        # First opening of input file is just for initialization of grid
+        filenamein = fc.get_filename(confM2R, confM2R.start_year, confM2R.start_month, confM2R.start_day, None)
+
+        # Finalize creating the model grd object now that we know the filename for input data
+        confM2R.grdMODEL.create_object(confM2R, filenamein)
+        confM2R.grdMODEL.getdims()
     
-    # Create the objects for source and destination grids
-    grdMODEL = grd.Grd("FORCINGDATA", confM2R)
+    # Abbreviate grid objects
+    grdROMS = confM2R.grdROMS
+    grdMODEL = confM2R.grdMODEL
     
     # Create the outputfile
     outfilename= confM2R.abbreviation + '_windUV_' + str(confM2R.atmos_indata_type) + '_' \
                  + str(confM2R.startdate.year) + '_to_' + str(confM2R.enddate.year) + '.nc'
-    IOatmos.createNetCDFFileUV(confM2R.grdROMS, outfilename, confM2R.output_format, confM2R.atmos_indata_type)
+    IOatmos.createNetCDFFileUV(grdROMS, outfilename, confM2R.output_format, confM2R.atmos_indata_type)
     
     # Setup ESMF for interpolation (calculates weights)
     print("  -> regridSrc2Dst at RHO points")
