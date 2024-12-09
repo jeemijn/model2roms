@@ -192,20 +192,11 @@ def get_time(confM2R, year, month, day, ntime):
     other files. The time_object is used to get the correct file for the given date.
     """
 
-    if confM2R.ocean_indata_type == 'SODA3':
-        filename = fc.getSODA3filename(confM2R, year, month, day, None)
-
-    if confM2R.ocean_indata_type == 'SODA3_5DAY':
-        filename = fc.getSODA3_5DAYfilename(confM2R, year, month, day, None)
-
-    if confM2R.ocean_indata_type == 'SODAMONTHLY':
-        filename = fc.getSODAMONTHLYfilename(confM2R, year, month, None)
-
-    if confM2R.ocean_indata_type == 'GLORYS':
-        filename = fc.get_GLORYS_filename(confM2R, year, month, "So")
-
     if confM2R.ocean_indata_type == 'NORESM':
+        # cant use defaultvar (by entering None) because this is set to 'grid' and maybe not suitable
         filename = fc.getNORESMfilename(confM2R, year, month, "salnlvl")
+    else:
+        filename = fc.get_filename(confM2R, year, month, day, None)
 
     # Now open the input file and get the time
     if confM2R.use_zarr:
@@ -225,6 +216,7 @@ def get_time(confM2R, year, month, day, ntime):
                 logging.error("[M2R_model2roms] Unable to open input file {}".format(filename))
     else:
         cdf = Dataset(filename)
+
     jdref = date2num(datetime(1948, 1, 1),
                      units="days since 1948-01-01 00:00:00",
                      calendar="standard")
@@ -265,6 +257,8 @@ def get_3d_data(confM2R, varname, year, month, day, timecounter):
     
     filename = fc.get_filename(confM2R, year, month, day, confM2R.input_varnames[varN])
     
+    logging.info(f"[M2R_model2roms]  filename in get_3d_data() is {filename}")
+
     if confM2R.use_zarr:
         
         if confM2R.input_varnames[varN] in confM2R.all_ds:
@@ -358,7 +352,7 @@ def get_2d_data(confM2R, myvar, year, month, day, timecounter):
         if confM2R.ocean_indata_type in ["SODA", "SODA3_5DAY"]:
             data = cdf.variables[confM2R.input_varnames[varN]][0, :, :]
 
-        if confM2R.ocean_indata_type == "SODA3":
+        elif confM2R.ocean_indata_type == "SODA3":
             if myvar == 'aice':
                 # We only extract the first thickness concentration. Need to fix this so all 5 classes can be extracted.
                 # http://www.atmos.umd.edu/~ocean/index_files/soda3_readme.htm
@@ -370,24 +364,24 @@ def get_2d_data(confM2R, myvar, year, month, day, timecounter):
             else:
                 data = cdf.variables[confM2R.input_varnames[varN]][int(month - 1), :, :]
 
-        if confM2R.ocean_indata_type == "NORESM" and confM2R.set_2d_vars_to_zero is False:
+        elif confM2R.ocean_indata_type == "NORESM" and confM2R.set_2d_vars_to_zero is False:
             # myunits = cdf.variables[str(grdROMS.varNames[varN])].units
             # For NORESM data are 12 months of data stored in ice files. Use ID as month indicator to get data.
             data = np.squeeze(cdf.variables[str(confM2R.input_varnames[varN])][timecounter, :, :])
             data = np.where(data.mask, confM2R.grdROMS.fillval, data)
 
-        if confM2R.ocean_indata_type == "GLORYS":
+        elif confM2R.ocean_indata_type == "GLORYS":
             if confM2R.use_zarr:
                 myunits = cdf[str(confM2R.input_varnames[varN])].units
                 data = np.squeeze(cdf[str(confM2R.input_varnames[varN])].to_numpy())
                 data = np.where(np.isnan(data), confM2R.fillvaluein, data)
-
             else:
                 data = np.squeeze(cdf.variables[str(confM2R.input_varnames[varN])][0, :, :])
                 data = np.where(data.mask, confM2R.fillvaluein, data)
-
-            
             data = np.where(data <= -32767, confM2R.grdROMS.fillval, data)
+
+        else:
+            raise Exception(f"[get_2d_data]: ocean_indata_type {confM2R.ocean_indata_type} not implemented yet.")
 
         if not confM2R.set_2d_vars_to_zero:
             cdf.close()

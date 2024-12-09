@@ -250,7 +250,7 @@ class Model2romsConfig(object):
         self.outgrid_name = 'ROHO800'  # "ROHO800", "A20", "ROHO160"
         self.outgrid_type = "ROMS"
         
-        # Path to where results files should be stored defined by grid name
+        # Path to where results files should be stored (must end with '/')
         self.outdir = "../oceanography/{}/".format(self.outgrid_name)
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir, exist_ok=True)

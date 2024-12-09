@@ -5,6 +5,9 @@ from netCDF4 import MFDataset, date2index, num2date
 
 # Main function called from model2roms
 def get_filename(confM2R, year, month, day, defaultvar):
+    """Function returning the filename. 
+    All ocean_indata_types should appear here.
+    The defaultvar is used in get_time() and in convert_MODEL2ROMS() for grid initialization."""
     if confM2R.ocean_indata_type == "SODA3":
         if defaultvar is None:
             defaultvar = "salinity"
