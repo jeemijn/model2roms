@@ -135,7 +135,9 @@ class Model2romsConfig(object):
                 return KeyError
 
     def define_atmospheric_forcing_path(self):
-        return {'ERA5': "/Volumes/DATASETS/ERA5/"}[self.atmos_indata_type]
+        return {'ERA5': "/Volumes/DATASETS/ERA5/",
+                'NORESM': "/Users/trondkr/Projects/RegScen/model2roms/TESTFILES/",
+                }[self.atmos_indata_type]
 
     def __init__(self):
         logging.info('[M2R_run] --------------------------\n')

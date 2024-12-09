@@ -7,6 +7,7 @@ from netCDF4 import Dataset, num2date
 
 import IOatmos
 import grd
+import forcingFilenames as fc
 
 try:
     import ESMF
@@ -87,17 +88,18 @@ def createAtmosFileUV(confM2R):
     print("  -> regridSrc2Dst at RHO points")
     grdMODEL.fieldSrc = ESMF.Field(grdMODEL.esmfgrid, "fieldSrc", staggerloc=ESMF.StaggerLoc.CENTER)
     grdMODEL.fieldDst_rho = ESMF.Field(grdROMS.esmfgrid, "fieldDst", staggerloc=ESMF.StaggerLoc.CENTER)
-    grdMODEL.regridSrc2Dst_rho = ESMF.Regrid(grdMODEL.fieldSrc, grdMODEL.fieldDst_rho, regrid_method=ESMF.RegridMethod.BILINEAR)
+    grdMODEL.regridSrc2Dst_rho = ESMF.Regrid(grdMODEL.fieldSrc, grdMODEL.fieldDst_rho, 
+                                             regrid_method=ESMF.RegridMethod.BILINEAR)
 
-    # Loop over each year and do the interpolations and write to file
-    year=2050; month=1; day=1
-    if mytype == "NORESM":
-        
-        filename = getNORESMfilename(year,month,day,"TAUX",atmospath)
+    if confM2R.atmos_indata_type == "NORESM":
+        # compute wind speeds U,V from wind stress and interpolate
+        # using variables TAUX, TAUY, U10
+        year=2050; month=1; day=1           # only to get filename
+        filename = fc.getNORESMfilename(year,month,day,"TAUX")
         cdf = Dataset(filename,"r")
-        U10 = cdf.variables["U10"][:]
-        TAUX = -(cdf.variables["TAUX"][:])
-        TAUY = -(cdf.variables["TAUY"][:])
+        U10 = cdf.variables["U10"][:]       # 10 m wind speed
+        TAUX = -(cdf.variables["TAUX"][:])  # zonal surface wind stress
+        TAUY = -(cdf.variables["TAUY"][:])  # meridional surface wind stress
 
         magstr = np.sqrt(TAUX*TAUX + TAUY*TAUY)
         magstr = np.where(magstr < 1.e-8,1.e-8,magstr)
@@ -108,15 +110,16 @@ def createAtmosFileUV(confM2R):
         time_in = cdf.variables["time"][:]
         time_calendar = cdf.variables['time'].calendar
         time_units = cdf.variables['time'].units
-       
+
         scru = np.zeros((len(time_in),np.shape(grdROMS.lat_rho)[0],np.shape(grdROMS.lat_rho)[1]))
         scrv = np.zeros((len(time_in),np.shape(grdROMS.lat_rho)[0],np.shape(grdROMS.lat_rho)[1]))
-  
+
+        # Loop over each year and do the interpolations and write to file
         # Loop over each time-step in current file
         for t in range(len(time_in)):
             currentdate=num2date(time_in[t], units=time_units,calendar=time_calendar)
             print("Interpolating date: ",currentdate)
-            
+
             # Eastward wind
             grdMODEL.fieldSrc[:,:]=np.flipud(np.rot90(np.squeeze(windE[t,:,:])))
             fieldE = grdMODEL.regridSrc2Dst_rho(grdMODEL.fieldSrc, grdMODEL.fieldDst_rho)
@@ -125,7 +128,6 @@ def createAtmosFileUV(confM2R):
             fieldE = np.fliplr(np.rot90(fieldE.data,3))
             fieldE = laplaceFilter(fieldE, 1000, grdROMS.xi_rho, grdROMS.eta_rho)
             fieldE = fieldE*grdROMS.mask_rho
-           
 
             # Northward wind
             grdMODEL.fieldSrc[:,:]=np.flipud(np.rot90(np.squeeze(windN[t,:,:])))
@@ -134,7 +136,7 @@ def createAtmosFileUV(confM2R):
             fieldN = np.fliplr(np.rot90(fieldN.data,3))
             fieldN = laplaceFilter(fieldN, 1000, grdROMS.xi_rho, grdROMS.eta_rho)
             fieldN = fieldN*grdROMS.mask_rho
-        
+
             # Magnitude
             grdMODEL.fieldSrc[:,:]=np.flipud(np.rot90(np.squeeze(magstr[t,:,:])))
             magnitude = grdMODEL.regridSrc2Dst_rho(grdMODEL.fieldSrc, grdMODEL.fieldDst_rho)
@@ -142,25 +144,24 @@ def createAtmosFileUV(confM2R):
             magnitude = np.fliplr(np.rot90(magnitude.data,3))
             magnitude = laplaceFilter(magnitude, 1000, grdROMS.xi_rho, grdROMS.eta_rho)
             magnitude = magnitude*grdROMS.mask_rho
-           
+
             import plotAtmos
             print("Interpolated range: ", np.min(magnitude), np.max(magnitude))
             print("Original range: ", np.min(magstr), np.max(magstr))
-            
+
             grdROMS.time+=1
+
             print(np.shape(windE), np.shape(grdMODEL.lon), np.shape(grdMODEL.lat))
             plotAtmos.contourMap(grdROMS, grdROMS.lon_rho, grdROMS.lat_rho, fieldE, fieldN, magnitude, 
-                'wind','REGSCEN',currentdate)
-            plotAtmos.contourMap(grdMODEL, 
-                grdMODEL.lon, 
-                grdMODEL.lat, 
-                np.squeeze(windE[t,:,:]), 
-                np.squeeze(windN[t,:,:]), 
-                np.squeeze(magstr[t,:,:]), 
-                'wind','NORESM',currentdate)
+                                 'wind','REGSCEN',currentdate)
+            plotAtmos.contourMap(grdMODEL,
+                                 grdMODEL.lon,
+                                 grdMODEL.lat,
+                                 np.squeeze(windE[t,:,:]),
+                                 np.squeeze(windN[t,:,:]),
+                                 np.squeeze(magstr[t,:,:]),
+                                 'wind',confM2R.atmos_indata_type,currentdate)
 
             # Rotate to ROMS grid structure
             scru[t,:,:]=(fieldE*np.cos(grdROMS.angle)) + (fieldN*np.sin(grdROMS.angle))
             scrv[t,:,:]=(fieldN*np.cos(grdROMS.angle)) - (fieldE*np.sin(grdROMS.angle))
-         
-

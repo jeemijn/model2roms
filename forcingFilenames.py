@@ -68,6 +68,12 @@ def getNORESMfilename(confM2R, year, month, myvar):
                     confM2R.ocean_forcing_path
                     + "VEL_NRCP85BPRPEX_01.micom.hmlvl.2006-2100.nc"
                 )
+
+        elif myvar in ["TAUX", "TAUY", "U10"]:    # atmospheric variables
+            filename = (
+                confM2R.atmospheric_forcing_path
+                + f"NRCP45AERCN_f19_g16_CLE_01.cam2.h5.{year}-{month:02d}-{day:02d}-00000.nc"
+            )
     return filename
 
 
